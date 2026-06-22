@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>F1 25 Broadcast Engineer Display</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=3">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+</head>
+<body>
+
+<div class="broadcast">
+
+    <!-- ==================== GP BANNER ==================== -->
+    <header class="gp-banner">
+        <div class="banner-left">
+            <div class="f1-logo">
+                <svg viewBox="0 0 60 20" width="48" height="16">
+                    <text x="0" y="16" font-family="Orbitron" font-weight="900" font-size="18" fill="#fff">F</text>
+                    <text x="14" y="16" font-family="Orbitron" font-weight="900" font-size="18" fill="#e10600">1</text>
+                </svg>
+            </div>
+        </div>
+        <div class="banner-center">
+            <div class="gp-title-block">
+                <img class="gp-flag-img" id="gp-flag-img" src="https://flagcdn.com/w80/it.png" alt="flag">
+                <div class="gp-name" id="gp-name">GRAND PRIX</div>
+                <div class="gp-track" id="gp-track">Circuit</div>
+            </div>
+        </div>
+        <div class="banner-right">
+            <div class="session-badge" id="session-badge">PRACTICE</div>
+            <div class="clock" id="clock">00:00</div>
+        </div>
+    </header>
+
+    <!-- ==================== MAIN 3-COLUMN LAYOUT ==================== -->
+    <div class="main-layout">
+
+        <!-- ========== LEFT: TRACK MAP ========== -->
+        <section class="col-left">
+            <div class="panel track-panel">
+                <div class="panel-title">LIVE TRACK MAP</div>
+                <div class="track-container">
+                    <canvas id="trackmap-canvas"></canvas>
+                    <div class="track-nodata" id="trackmap-nodata">In attesa dati circuito...</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========== CENTER: CAR INFORMATION ========== -->
+        <section class="col-center">
+            <div class="panel car-panel">
+                <div class="panel-title">CAR INFORMATION</div>
+
+                <!-- Telemetry Trace Graph -->
+                <div class="trace-container">
+                    <canvas id="trace-canvas"></canvas>
+                </div>
+
+                <!-- Gear Display -->
+                <div class="gear-strip">
+                    <span class="gear-item" data-g="-1">R</span>
+                    <span class="gear-item" data-g="0">N</span>
+                    <span class="gear-item" data-g="1">1</span>
+                    <span class="gear-item" data-g="2">2</span>
+                    <span class="gear-item" data-g="3">3</span>
+                    <span class="gear-item" data-g="4">4</span>
+                    <span class="gear-item" data-g="5">5</span>
+                    <span class="gear-item" data-g="6">6</span>
+                    <span class="gear-item" data-g="7">7</span>
+                    <span class="gear-item" data-g="8">8</span>
+                </div>
+
+                <!-- ERS / Brake / Throttle Bars -->
+                <div class="bars-row">
+                    <div class="bar-group">
+                        <div class="bar-v-label">ERS</div>
+                        <div class="bar-v-track"><div class="bar-v-fill ers-fill" id="ers-bar-v"></div></div>
+                    </div>
+                    <div class="bar-group">
+                        <div class="bar-v-label">BRAKE</div>
+                        <div class="bar-v-track"><div class="bar-v-fill brake-fill" id="brake-bar-v"></div></div>
+                    </div>
+                    <div class="bar-group">
+                        <div class="bar-v-label">THROT</div>
+                        <div class="bar-v-track"><div class="bar-v-fill throttle-fill" id="throttle-bar-v"></div></div>
+                    </div>
+                    <div class="bars-mid-info">
+                        <div class="mid-widgets-row">
+                            <!-- Steering wheel canvas -->
+                            <div class="widget-box">
+                                <canvas id="steer-canvas" width="120" height="120"></canvas>
+                            </div>
+                            <!-- Speed -->
+                            <div class="speed-display" id="speed-display">0</div>
+                            <!-- G-Force radar -->
+                            <div class="widget-box">
+                                <canvas id="gforce-canvas" width="120" height="120"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bars-values">
+                        <div class="bv-row"><span class="bv-label">ERS</span><span class="bv-val" id="ers-pct-val">0%</span></div>
+                        <div class="bv-row"><span class="bv-label">ON</span><span class="bv-val" id="throttle-pct-val">0%</span></div>
+                        <div class="bv-row"><span class="bv-label">100%</span></div>
+                    </div>
+                </div>
+
+                <!-- Fuel & Laps row -->
+                <div class="fuel-laps-row">
+                    <div class="fl-item">
+                        <span class="fl-label">FUEL</span>
+                        <span class="fl-value fuel-color" id="fuel-val">0.0 L</span>
+                    </div>
+                    <div class="fl-item">
+                        <span class="fl-label">LAPS</span>
+                        <span class="fl-value laps-color" id="fuel-laps-val">+0.00</span>
+                    </div>
+                </div>
+
+                <!-- Settings row: Brake Bias, Diff, ERS Mode -->
+                <div class="settings-row">
+                    <div class="setting-item">
+                        <span class="set-label">BRAKE BIAS</span>
+                        <span class="set-value" id="brake-bias-val">0.0</span>
+                    </div>
+                    <div class="setting-item">
+                        <span class="set-label">DIFF.</span>
+                        <span class="set-value" id="diff-val">0%</span>
+                    </div>
+                    <div class="setting-item">
+                        <span class="set-label">ERS MODE</span>
+                        <span class="set-value" id="ers-mode-val">NONE</span>
+                    </div>
+                </div>
+
+                <!-- Car silhouette with 4 tires -->
+                <div class="car-tyres-section">
+                    <!-- Front Left -->
+                    <div class="tyre-info tyre-fl" id="tyre-info-fl">
+                        <div class="ti-label">WEAR</div>
+                        <div class="ti-val"><span id="tw-fl">0%</span></div>
+                        <div class="ti-label">SURFACE</div>
+                        <div class="ti-val"><span id="ts-fl">0°</span></div>
+                        <div class="ti-label">INSIDE</div>
+                        <div class="ti-val"><span id="ti-fl">0°</span></div>
+                        <div class="ti-label">BRAKE</div>
+                        <div class="ti-val"><span id="tb-fl">0°</span></div>
+                    </div>
+
+                    <!-- Front Right -->
+                    <div class="tyre-info tyre-fr" id="tyre-info-fr">
+                        <div class="ti-label">WEAR</div>
+                        <div class="ti-val"><span id="tw-fr">0%</span></div>
+                        <div class="ti-label">SURFACE</div>
+                        <div class="ti-val"><span id="ts-fr">0°</span></div>
+                        <div class="ti-label">INSIDE</div>
+                        <div class="ti-val"><span id="ti-fr">0°</span></div>
+                        <div class="ti-label">BRAKE</div>
+                        <div class="ti-val"><span id="tb-fr">0°</span></div>
+                    </div>
+
+                    <!-- Car silhouette (center) -->
+                    <div class="car-silhouette">
+                        <svg viewBox="0 0 100 200" class="car-svg">
+                            <!-- Car body -->
+                            <path d="M50 10 L35 30 L30 60 L25 80 L20 100 L20 140 L25 160 L30 175 L35 190 L65 190 L70 175 L75 160 L80 140 L80 100 L75 80 L70 60 L65 30 Z"
+                                  fill="none" stroke="#00d4ff" stroke-width="1.5" opacity="0.6"/>
+                            <!-- Front wing -->
+                            <line x1="15" y1="18" x2="85" y2="18" stroke="#00d4ff" stroke-width="1" opacity="0.4"/>
+                            <!-- Rear wing -->
+                            <line x1="20" y1="188" x2="80" y2="188" stroke="#00d4ff" stroke-width="1" opacity="0.4"/>
+                            <!-- Wheels -->
+                            <rect id="wheel-fl" x="10" y="35" width="14" height="30" rx="3" fill="#00e676" opacity="0.7"/>
+                            <rect id="wheel-fr" x="76" y="35" width="14" height="30" rx="3" fill="#00e676" opacity="0.7"/>
+                            <rect id="wheel-rl" x="10" y="140" width="14" height="30" rx="3" fill="#00e676" opacity="0.7"/>
+                            <rect id="wheel-rr" x="76" y="140" width="14" height="30" rx="3" fill="#00e676" opacity="0.7"/>
+                        </svg>
+                    </div>
+
+                    <!-- Rear Left -->
+                    <div class="tyre-info tyre-rl" id="tyre-info-rl">
+                        <div class="ti-label">WEAR</div>
+                        <div class="ti-val"><span id="tw-rl">0%</span></div>
+                        <div class="ti-label">SURFACE</div>
+                        <div class="ti-val"><span id="ts-rl">0°</span></div>
+                        <div class="ti-label">INSIDE</div>
+                        <div class="ti-val"><span id="ti-rl">0°</span></div>
+                        <div class="ti-label">BRAKE</div>
+                        <div class="ti-val"><span id="tb-rl">0°</span></div>
+                    </div>
+
+                    <!-- Rear Right -->
+                    <div class="tyre-info tyre-rr" id="tyre-info-rr">
+                        <div class="ti-label">WEAR</div>
+                        <div class="ti-val"><span id="tw-rr">0%</span></div>
+                        <div class="ti-label">SURFACE</div>
+                        <div class="ti-val"><span id="ts-rr">0°</span></div>
+                        <div class="ti-label">INSIDE</div>
+                        <div class="ti-val"><span id="ti-rr">0°</span></div>
+                        <div class="ti-label">BRAKE</div>
+                        <div class="ti-val"><span id="tb-rr">0°</span></div>
+                    </div>
+                </div>
+
+                
+                 <!--Track Stats Bar -->
+                <div class="track-stats-bar">
+                    <div class="ts-item">
+                        <span class="ts-icon">↩</span> TURNS
+                        <span class="ts-sep">—</span>
+                        <span class="ts-icon">→</span> FULL THROTTLE
+                        <span class="ts-sep">—</span>
+                        <span class="ts-icon">⬇</span> DOWNFORCE
+                        <span class="ts-sep">—</span>
+                        <span class="ts-icon">◎</span> TYRE WEAR
+                    </div>
+                </div>
+            
+
+                <!-- Live Track Information -->
+                <div class="live-track-info">
+                    <div class="lti-title">LIVE TRACK INFORMATION</div>
+                    <div class="lti-row">
+                        <div class="lti-item">
+                            <span class="lti-label">WARNINGS</span>
+                            <span class="lti-val" id="lti-warnings">-</span>
+                        </div>
+                        <div class="lti-item">
+                            <span class="lti-label">PENALTIES</span>
+                            <span class="lti-val" id="lti-penalties">-</span>
+                        </div>
+                        <div class="lti-item">
+                            <span class="lti-label">ON TRACK</span>
+                            <span class="lti-val" id="lti-ontrack">0/0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Weather Information -->
+                <div class="weather-info">
+                    <div class="wi-title">WEATHER INFORMATION</div>
+                    <div class="wi-row" id="weather-row">
+                        <div class="wi-card">
+                            <div class="wi-icon" id="wi-icon-now">☀️</div>
+                            <div class="wi-label">CLEAR</div>
+                            <div class="wi-detail"><span id="wi-now-label">NOW</span></div>
+                            <div class="wi-pct" id="wi-pct-now">0%</div>
+                        </div>
+                        <div class="wi-card">
+                            <div class="wi-icon" id="wi-icon-5">☀️</div>
+                            <div class="wi-label" id="wi-label-5">CLEAR</div>
+                            <div class="wi-detail">+5 min</div>
+                            <div class="wi-pct" id="wi-pct-5">0%</div>
+                        </div>
+                        <div class="wi-card">
+                            <div class="wi-icon" id="wi-icon-10">☀️</div>
+                            <div class="wi-label" id="wi-label-10">CLEAR</div>
+                            <div class="wi-detail">+10 min</div>
+                            <div class="wi-pct" id="wi-pct-10">0%</div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ========== RIGHT: LEADERBOARD + TIMING TABS ========== -->
+        <section class="col-right">
+
+            <!-- Tab navigation bar -->
+            <div class="right-tab-bar">
+                <button class="right-tab active" data-tab="leaderboard">LEADERBOARD</button>
+                <button class="right-tab" data-tab="timing">TIMING</button>
+            </div>
+
+            <!-- TAB: Leaderboard -->
+            <div class="right-tab-content" id="rtab-leaderboard">
+                <div class="panel leaderboard-panel">
+                    <div class="lb-scroll">
+                        <table class="lb-table" id="lb-table">
+                            <thead>
+                                <tr>
+                                    <th class="th-pos"></th>
+                                    <th class="th-team"></th>
+                                    <th class="th-name"></th>
+                                    <th class="th-icon"></th>
+                                    <th class="th-tyreinfo">TYRE / AGE / WEAR</th>
+                                    <th class="th-ers">ERS</th>
+                                    <th class="th-drs">DRS</th>
+                                    <th class="th-int">INTERVAL</th>
+                                    <th class="th-last">LAST LAP</th>
+                                    <th class="th-fast">FASTEST LAP</th>
+                                </tr>
+                            </thead>
+                            <tbody id="lb-body">
+                                <tr><td colspan="10" class="no-data">In attesa dati...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Mini Track Map under leaderboard (connection indicator) -->
+                    <div class="lb-mini-track">
+                        <div class="mini-track-labels">
+                            <span id="mt-label-1"></span>
+                            <span id="mt-label-2"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB: Timing -->
+            <div class="right-tab-content" id="rtab-timing" style="display:none">
+                <div class="panel timing-panel">
+                    <div class="tt-scroll">
+                        <table class="tt-table" id="tt-table">
+                            <thead>
+                                <tr>
+                                    <th class="tt-th-pos"></th>
+                                    <th class="tt-th-team"></th>
+                                    <th class="tt-th-name">DRIVER</th>
+                                    <th class="tt-th-s">S1</th>
+                                    <th class="tt-th-s">S2</th>
+                                    <th class="tt-th-s">S3</th>
+                                    <th class="tt-th-last">LAST LAP</th>
+                                    <th class="tt-th-best">BEST LAP</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tt-body">
+                                <tr><td colspan="8" class="no-data">In attesa dati...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+    </div>
+
+    <!-- ==================== BOTTOM DRIVER BANNER ==================== -->
+    <footer class="driver-banner">
+        <div class="db-position" id="db-pos">1</div>
+        <div class="db-info">
+            <span class="db-name" id="db-name">DRIVER</span>
+            <span class="db-team" id="db-team">
+                <span class="db-team-letter" id="db-team-letter">W</span>
+                <span id="db-team-name">TEAM</span>
+            </span>
+        </div>
+        <div class="db-number" id="db-number">0</div>
+    </footer>
+
+</div>
+
+<script src="{{ url_for('static', filename='js/dashboard.js') }}?v=3"></script>
+</body>
+</html>
