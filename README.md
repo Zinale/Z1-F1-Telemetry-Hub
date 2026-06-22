@@ -106,7 +106,6 @@ For developers interested in compiling from source or modifying the dashboard. *
 | `static/` | Frontend Assets (CSS, JS) |
 | `templates/` | Flask HTML Templates |
 | `tracks/` | Text files containing track coordinate points |
-| `InstallerSetupScript.iss` | Inno Setup compilation script |
 
 ---
 ## 🙌 Credits & Acknowledgments
