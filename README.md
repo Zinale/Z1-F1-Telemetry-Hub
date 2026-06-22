@@ -114,7 +114,7 @@ For developers interested in compiling from source or modifying the dashboard. *
 This project wouldn't be possible without the resources and groundwork provided by the community and external services:
 
 * 🏁 **EA SPORTS & Formula 1:** F1® 24, F1® 25, F1® 26 and related game assets/logos are trademarks of Electronic Arts Inc. and Formula One Digital Media Limited. *Note: This is an unofficial, community-driven tool and is strictly not affiliated with, nor endorsed by, EA SPORTS or Formula 1.*
-* 🗺️ **Track Data:** The track coordinate files used for the live map drawing (`tracks/` directory) were sourced and adapted from [Fredrik2002's f1-25-telemetry-application](https://github.com/Fredrik2002/f1-25-telemetry-application). Huge thanks to them for their amazing work on extracting the track geometries!
+* 🗺️ **Track Data:** The track coordinate files used for the live map drawing (`tracks/` directory) were sourced and adapted from [Fredrik2002's f1-25-telemetry-application](https://github.com/Fredrik2002/f1-25-telemetry-application). 
 * 🛡️ **Repository Assets:** Badges and aesthetic elements for this README were generated using [Shields.io](https://shields.io/) and [SimpleIcons](https://simpleicons.org).
 
 ---
