@@ -1,5 +1,0 @@
-python -m nuitka --standalone --include-data-dir=static=static --include-data-dir=templates=templates --include-data-dir=tracks=tracks app.py
-
-
-
-python -m nuitka --standalone --windows-console-mode=disable --enable-plugin=tk-inter --windows-icon-from-ico=app_icon.ico --include-data-file=app_icon.ico=app_icon.ico --include-data-dir=static=static --include-data-dir=templates=templates --include-data-dir=tracks=tracks app.py 
